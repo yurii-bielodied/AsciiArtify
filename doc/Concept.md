@@ -1,7 +1,5 @@
 # Порівняльний аналіз minikube, kind та k3d для локального Kubernetes-кластеру стартапу **AsciiArtify**
 
-*PoC для AsciiArtify*
-
 ---
 
 ## 1. Огляд інструментів
@@ -36,16 +34,16 @@
 
 | Характеристика                         | **minikube**                                           | **kind**                                              | **k3d**                                                        |
 |----------------------------------------|--------------------------------------------------------|-------------------------------------------------------|----------------------------------------------------------------|
-| Тип                                    | Upstream Kubernetes                                   | Upstream Kubernetes “в Docker/Podman”                | Легка дистрибуція k3s у Docker                                |
-| ОС хоста                               | Linux, macOS, Windows                                 | Linux, macOS, Windows                                 | Linux, macOS, Windows                                         |
-| Архітектури                            | amd64, arm64                                          | amd64, arm64                                          | amd64, arm64                                                   |
-| Бекенд                                 | Docker, Podman, VM (KVM/VirtualBox/Hyper-V тощо)      | Docker, Podman (experimental)                         | Docker API (Docker Engine / Docker Desktop)                    |
-| Мультивузлові кластери                | Підтримуються, конфігурація відносно складніша        | Підтримуються, конфігурація YAML                      | Підтримуються, дуже прості параметри CLI                      |
-| Швидкість створення кластера          | Середня (повільніше з VM)                             | Висока                                                | Дуже висока (легкий k3s)                                      |
-| Ресурсоспоживання                     | Вище (особливо з VM-драйверами)                       | Помірне                                               | Низьке (оптимізовано для edge/IoT)                            |
-| Додаткові функції                     | Багато addons (Dashboard, Ingress, metrics тощо)      | Все ставимо руками                                    | Частина компонентів k3s є “з коробки” (Ingress, metrics тощо) |
-| Підходить для CI/CD                   | Можливо, але не основний сценарій                     | Дуже популярний варіант для CI                        | Часто використовується, але менш “стандартний”, ніж kind       |
-| Схожість із продакшн Kubernetes       | Дуже висока                                           | Дуже висока                                           | Висока, але є деякі відмінності за дефолтами k3s              |
+| Тип                                    | Upstream Kubernetes                                    | Upstream Kubernetes “в Docker/Podman”                | Легка дистрибуція k3s у Docker                                |
+| ОС хоста                               | Linux, macOS, Windows                                  | Linux, macOS, Windows                                | Linux, macOS, Windows                                         |
+| Архітектури                            | amd64, arm64                                           | amd64, arm64                                         | amd64, arm64                                                   |
+| Бекенд                                 | Docker, Podman, VM (KVM/VirtualBox/Hyper-V тощо)       | Docker, Podman (experimental)                        | Docker API (Docker Engine / Docker Desktop)                    |
+| Мультивузлові кластери                | Підтримуються, конфігурація відносно складніша         | Підтримуються, конфігурація YAML                     | Підтримуються, дуже прості параметри CLI                      |
+| Швидкість створення кластера          | Середня (повільніше з VM)                              | Висока                                               | Дуже висока (легкий k3s)                                      |
+| Ресурсоспоживання                     | Вище (особливо з VM-драйверами)                        | Помірне                                              | Низьке (оптимізовано для edge/IoT)                            |
+| Додаткові функції                     | Багато addons (Dashboard, Ingress, metrics тощо)       | Все ставимо руками                                   | Частина компонентів k3s є “з коробки” (Ingress, metrics тощо) |
+| Підходить для CI/CD                   | Можливо, але не основний сценарій                      | Дуже популярний варіант для CI                       | Часто використовується, але менш “стандартний”, ніж kind      |
+| Схожість із продакшн Kubernetes       | Дуже висока                                            | Дуже висока                                          | Висока, але є деякі відмінності за дефолтами k3s              |
 
 ---
 
@@ -164,41 +162,189 @@
 
 ---
 
-## 5. Демонстрація: “Hello World” на k3d
+## 5. Demo
 
-У межах практичного ознайомлення я обрав **k3d** як базовий інструмент для локального PoC і провів демо з розгортанням простого “Hello World” застосунку.
+## 5.0. Передумови: середовище та залежності. Встановлювати в залежності від обраного стеку
 
-### 5.1. Встановлення `k3d`
+### 5.0.1. Вихідні припущення
 
-#### Варіант 1: скрипт (Linux / macOS)
+Для цілей цього PoC я вважаю, що в нас є:
 
-```bash
-curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-```
+- свіжий **Linux-сервер** (наприклад, Ubuntu 24.04 LTS);
+- доступ до сервера по SSH;
+- користувач із правами `sudo`;
+- відкритий доступ в інтернет для завантаження пакетів.
 
-#### Варіант 2: Homebrew (Linux / macOS)
-
-```bash
-brew install k3d
-```
-
-Перевірка:
-
-```bash
-k3d version
-kubectl version --client
-```
-
-> `kubectl` потрібно встановити окремо (через пакетний менеджер або офіційні бінарники).
+Все нижче — команди, які я запускатиму на цьому сервері.
 
 ---
 
-### 5.2. Створення локального кластеру AsciiArtify
+### 5.0.2. Базові пакети
+
+Оновлюю пакети та встановлюю базові утиліти:
+
+```bash
+sudo apt update
+sudo apt install -y \
+  curl \
+  ca-certificates \
+  gnupg \
+  lsb-release \
+  gpg
+```
+
+---
+
+### 5.0.3. Встановлення Docker Engine (без Docker Desktop)
+
+Оскільки ми працюємо на Linux-сервері, нам потрібен **Docker Engine**, а не Docker Desktop.
+
+1. Додаю GPG-ключ і репозиторій Docker:
+
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+2. Встановлюю Docker Engine:
+
+```bash
+sudo apt update
+sudo apt install -y \
+  docker-ce \
+  docker-ce-cli \
+  containerd.io \
+  docker-buildx-plugin \
+  docker-compose-plugin
+```
+
+3. Додаю поточного користувача в групу `docker`, щоб не запускати `sudo` щоразу:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+> Після цього потрібно **перелогінитися** (вийти з SSH-сесії і зайти знову), щоб група `docker` застосувалася.
+
+Перевіряю, що Docker працює:
+
+```bash
+docker run --rm hello-world
+```
+
+---
+
+### 5.0.4. Встановлення `kubectl`
+
+`kubectl` — основний клієнт для керування Kubernetes-кластером.
+
+```bash
+# завантажити останню стабільну версію
+curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/kubectl
+
+kubectl version --client
+```
+
+---
+
+### 5.0.5. Встановлення `k3d` (основний інструмент для PoC)
+
+Для PoC AsciiArtify ми обираємо **k3d** як основний локальний кластер.
+
+Встановлення через офіційний інсталяційний скрипт:
+
+```bash
+curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+k3d version
+```
+
+---
+
+### 5.0.6. Встановлення `kind`
+
+`kind` нам знадобиться переважно для CI/CD та інтеграційних тестів.
+
+```bash
+curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64"
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+
+kind version
+```
+
+> Версію (`v0.24.0`) при потребі можна оновити на актуальну.
+
+---
+
+### 5.0.7. Встановлення `minikube`
+
+`minikube` використовується як альтернативний інструмент для локальних кластерів (особливо для навчання та експериментів з addons).
+
+```bash
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+chmod +x minikube
+sudo mv minikube /usr/local/bin/minikube
+
+minikube version
+```
+
+---
+
+### 5.0.8. (Опційно) Встановлення Podman
+
+Як альтернатива Docker (особливо з погляду ліцензійних ризиків) можна паралельно встановити **Podman**:
+
+```bash
+sudo apt install -y podman
+podman --version
+```
+
+Надалі:
+
+- `minikube` може працювати з Podman як із драйвером;
+- `kind` має експериментальну підтримку Podman;
+- `k3d` орієнтований на Docker API, тож тут Podman — не основний варіант.
+
+---
+
+
+Нижче — демо запуску локального кластера та деплою “Hello World” на **k3d**.
+
+### 5.1. Демо (asciinema)
+
+[![AsciiArtify k3d demo](https://asciinema.org/a/lx3XBSH2WYdpHqSuQeOxjgLF6.svg)](https://asciinema.org/a/lx3XBSH2WYdpHqSuQeOxjgLF6.svg)
+
+---
+
+### 5.2. Покрокове демо: “Hello World” на k3d
+
+У межах практичного ознайомлення я обрав **k3d** як базовий інструмент для локального PoC і провів демо з розгортанням простого “Hello World” застосунку.
+
+#### 5.2.1. Встановлення `k3d`
+
+(див. розділ `0.5` для інсталяції `k3d` на свіжому сервері)
+
+#### 5.2.2. Створення локального кластеру AsciiArtify
 
 Я створив кластер з 1 `server` та 2 `agent`-нодами й пробросом порту 8080 з хоста на порт 80 кластерного load balancer’а:
 
 ```bash
-k3d cluster create asciiartify-dev   --servers 1   --agents 2   -p "8080:80@loadbalancer"   --wait
+k3d cluster create asciiartify-dev \
+  --servers 1 \
+  --agents 2 \
+  -p "8080:80@loadbalancer" \
+  --wait
 ```
 
 Перевірка стану кластера:
@@ -210,7 +356,7 @@ kubectl get pods -A
 
 ---
 
-### 5.3. Розгортання “Hello World” застосунку
+#### 5.2.3. Розгортання “Hello World” застосунку
 
 Для демо я використав образ `nginxdemos/hello`.
 
@@ -223,13 +369,39 @@ kubectl get pods -A
 2. **Створив Deployment:**
 
    ```bash
-   kubectl -n demo create deployment hello-world      --image=nginxdemos/hello
+   kubectl -n demo create deployment hello-world \
+     --image=nginxdemos/hello
    ```
 
-3. **Створив Service типу LoadBalancer:**
+3. **Створив Service типу LoadBalancer і додав Ingress правило для трафіка:**
 
    ```bash
-   kubectl -n demo expose deployment hello-world      --type=LoadBalancer      --port=80
+   kubectl -n demo expose deployment hello-world \
+     --type=LoadBalancer \
+     --port=80
+   ```
+
+   ```bash
+   cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello-world
+  namespace: demo
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hello-world
+            port:
+              number: 80
+EOF
    ```
 
 4. **Перевірив, що Pod і Service запущені:**
@@ -245,6 +417,12 @@ kubectl get pods -A
 curl http://localhost:8080
 ```
 
+З хоста можна перевірити також через тестовий под:
+
+```bash
+kubectl run test -n demo --image=curlimages/curl:latest --rm -it --restart=Never -- curl http://hello-world
+```
+
 Або у браузері:  
 `http://localhost:8080`
 
@@ -252,7 +430,7 @@ curl http://localhost:8080
 
 ---
 
-### 5.4. Як це розширити для AsciiArtify
+#### 5.2.4. Як це розширити для AsciiArtify
 
 Те саме демо легко адаптується під продукт:
 
@@ -261,7 +439,7 @@ curl http://localhost:8080
   - `asciiartify-frontend` — простий фронтенд, який ходить до API.
 - у репозиторії GitHub додати:
   - `k8s/namespace.yaml`
-  - `k8s/deployment-api.yaml`
+  - `k3s/deployment-api.yaml`   # (ймовірно, правильніше: k8s/deployment-api.yaml, але збережемо як у поточній концепції, якщо потрібно змінити — оновити тут)
   - `k8s/deployment-frontend.yaml`
   - `k8s/service-api.yaml`
   - `k8s/service-frontend.yaml`
@@ -271,7 +449,11 @@ curl http://localhost:8080
   #!/usr/bin/env bash
   set -euo pipefail
 
-  k3d cluster create asciiartify-dev     --servers 1     --agents 2     -p "8080:80@loadbalancer"     --wait
+  k3d cluster create asciiartify-dev \
+    --servers 1 \
+    --agents 2 \
+    -p "8080:80@loadbalancer" \
+    --wait
 
   kubectl apply -f k8s/
   ```
