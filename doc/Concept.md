@@ -323,7 +323,7 @@ podman --version
 
 ### 5.1. Демо (asciinema)
 
-[![AsciiArtify k3d demo](https://asciinema.org/a/lx3XBSH2WYdpHqSuQeOxjgLF6.png)](https://asciinema.org/a/lx3XBSH2WYdpHqSuQeOxjgLF6)
+[![AsciiArtify k3d demo](https://asciinema.org/a/lx3XBSH2WYdpHqSuQeOxjgLF6.svg)](https://asciinema.org/a/lx3XBSH2WYdpHqSuQeOxjgLF6)
 
 ---
 
