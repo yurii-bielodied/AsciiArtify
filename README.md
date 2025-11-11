@@ -187,4 +187,5 @@ AsciiArtify/
   - перевести сервіс AsciiArtify на модель “все через Git” (manifests / Helm / Kustomize).
 
 Детальний аналіз та рекомендації див. у [`doc/Concept.md`](doc/Concept.md).
+
 Деталі GitOps PoC та Argo CD — у [`doc/POC.md`](doc/POC.md).
