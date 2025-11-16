@@ -281,7 +281,7 @@ git push origin main
 
 ![MVP demo: Argo CD auto-sync](img/asciiartify-mvp-argocd.mp4)
 
-![MVP demo: Argo CD auto-sync](<video src="img/asciiartify-mvp-argocd.mp4" controls width="640"></video>)
+<video src="img/asciiartify-mvp-argocd.mp4" controls width="640"></video>
 
 > На демо видно роботу `go-demo-app`:
 > - інтерфейс Argo CD: статус додатку, auto-sync;
