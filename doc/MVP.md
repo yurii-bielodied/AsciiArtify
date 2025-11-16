@@ -279,7 +279,7 @@ git push origin main
 
 ## Демо: робота продукту на інфраструктурі AsciiArtify
 
-![MVP demo: Argo CD auto-sync](img/asciiartify-mvp-argocd.mp4)
+[![MVP demo: Argo CD auto-sync](img/asciiartify-mvp-argocd.mp4)]
 
 <video src="img/asciiartify-mvp-argocd.mp4" controls width="100%"></video>
 
