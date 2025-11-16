@@ -279,9 +279,13 @@ git push origin main
 
 ## Демо: робота продукту на інфраструктурі AsciiArtify
 
-[![MVP demo: Argo CD auto-sync](img/asciiartify-mvp-argocd.mp4)]
+![MVP demo: Argo CD auto-sync](img/asciiartify-mvp-argocd.mp4)
 
-<video src="img/asciiartify-mvp-argocd.mp4" controls width="100%"></video>
+![MVP demo2: Argo CD auto-sync](img/go-demo_MVP.mov)
+
+<video src="img/asciiartify-mvp-argocd.mp4" controls></video>
+
+<video src="img/go-demo_MVP.mov" controls></video>
 
 > На демо видно роботу `go-demo-app`:
 > - інтерфейс Argo CD: статус додатку, auto-sync;
