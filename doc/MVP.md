@@ -60,14 +60,6 @@ kubectl create namespace go-demo
 
 ### 3.1. Маніфест Argo CD Application
 
-Рекомендується зберегти маніфест додатку Argo CD у цьому ж репозиторії AsciiArtify, наприклад:
-
-```text
-AsciiArtify/
-  k8s/
-    argocd-app-go-demo.yaml
-```
-
 Приклад `k8s/argocd-app-go-demo.yaml`:
 
 ```yaml
@@ -223,8 +215,8 @@ watch -n 2 'kubectl -n go-demo get pods'
 Щоб не комітити напряму в `https://github.com/den-vasyliev/go-demo-app`, можна:
 
 1. Зробити **fork** репозиторію на GitHub у свій акаунт, наприклад:  
-   `https://github.com/<username>/go-demo-app`
-2. Оновити `repoURL` в маніфесті Argo CD Application / у UI на `https://github.com/<username>/go-demo-app`.
+   `https://github.com/yurii-bielodied/go-demo-app`
+2. Оновити `repoURL` в маніфесті Argo CD Application / у UI на `https://github.com/yurii-bielodied/go-demo-app`.
 3. Далі працювати зі своїм форком (push змін, теги, гілки).
 
 > У завданні явно вказано `https://github.com/den-vasyliev/go-demo-app` як продукт —  
@@ -235,7 +227,7 @@ watch -n 2 'kubectl -n go-demo get pods'
 У локальному клону репозиторію (форку):
 
 ```bash
-git clone https://github.com/<username>/go-demo-app.git
+git clone https://github.com/yurii-bielodied/go-demo-app
 cd go-demo-app
 ```
 
@@ -285,39 +277,14 @@ git push origin main
 
 ## 7. Вбудоване демо для оцінювання
 
-Для відповідності вимогам завдання (особливо на 4–7 балів) потрібно мати **вбудоване демо** в цьому репозиторії.
+## Демо: робота продукту на інфраструктурі AsciiArtify
 
-Рекомендація:
+![MVP demo: Argo CD auto-sync](../img/asciiartify-mvp-argocd.mp4)
 
-1. Записати демо роботи додатку та авто-синхронізації:
-   - або **відео** (YouTube / локальний `.mp4`);
-   - або **GIF** (наприклад, запис терміналу + браузера).
-2. Покласти артефакт у репозиторій, наприклад:
-
-   ```text
-   AsciiArtify/
-     img/
-       asciiartify-mvp-argocd.gif
-   ```
-
-3. Вбудувати його в `MVP.md`:
-
-   ```markdown
-   ## Демо: робота продукту на інфраструктурі AsciiArtify
-
-   ![MVP demo: Argo CD auto-sync](../img/asciiartify-mvp-argocd.gif)
-
-   > На демо видно:
-   > - роботу `go-demo-app` (запити `/ascii/`, `/img/`, `/api/`);
-   > - інтерфейс Argo CD: статус додатку, auto-sync;
-   > - зміну в Git-репозиторії та автоматичне оновлення подів у кластері.
-   ```
-
-За рахунок цього `doc/MVP.md` стане самодостатнім артефактом, який:
-
-- пояснює, як розгорнута інфраструктура;
-- показує, як працює **MVP-додаток** на AsciiArtify-платформі;
-- демонструє **автоматичну синхронізацію Argo CD ←→ Git ←→ Kubernetes**.
+> На демо видно роботу `go-demo-app`:
+> - інтерфейс Argo CD: статус додатку, auto-sync;
+> - зміну в Git-репозиторії та автоматичне оновлення подів у кластері.
+> - демонструє **автоматичну синхронізацію Argo CD ←→ Git ←→ Kubernetes**.
 
 ---
 

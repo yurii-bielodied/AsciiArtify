@@ -6,7 +6,8 @@ AsciiArtify — це стартап, який розробляє ML-застос
 - концепцію локального Kubernetes-середовища для PoC;
 - інструкції зі встановлення залежностей;
 - приклад демо-деплою “Hello World” у кластер k3d;
-- GitOps PoC із **Argo CD** для доступу до веб-інтерфейсу та керування деплоєм.
+- GitOps PoC із **Argo CD** для доступу до веб-інтерфейсу та керування деплоєм;
+- **MVP**-деплой реального застосунку `go-demo-app` з **auto-sync** в Argo CD.
 
 Основний документ із детальним порівнянням інструментів локального Kubernetes:
 
@@ -16,6 +17,10 @@ AsciiArtify — це стартап, який розробляє ML-застос
 
 👉 див. [`doc/POC.md`](doc/POC.md)
 
+Документ із налаштуванням **MVP** (Argo CD Application → `go-demo-app`, авто-синхронізація):
+
+👉 див. [`doc/MVP.md`](doc/MVP.md)
+
 ---
 
 ## Структура репозиторію
@@ -23,10 +28,13 @@ AsciiArtify — це стартап, який розробляє ML-застос
 ```text
 AsciiArtify/
   doc/
-    Concept.md        # детальний аналіз minikube, kind, k3d + демо
-    POC.md            # GitOps PoC: Argo CD на k3d, доступ до UI
-  k8s/                # (опційно) маніфести Kubernetes для PoC
-  scripts/            # (опційно) утилітарні скрипти (dev-cluster.sh тощо)
+    Concept.md                    # детальний аналіз minikube, kind, k3d + демо
+    POC.md                        # GitOps PoC: Argo CD на k3d, доступ до UI
+    MVP.md                        # MVP: GitOps-деплой go-demo-app + авто-синхронізація
+  img/
+    asciiartify-demo.gif          # демо запуску локального кластера та деплою “Hello World” на k3d
+    asciiartify-mvp-argocd.mp4    # демо роботи додатку та авто-синхронізації у Argo CD
+  k8s/                            # маніфести Kubernetes для PoC
   README.md
 ```
 
@@ -114,7 +122,7 @@ AsciiArtify/
    ```bash
    kubectl create namespace argocd
 
-   kubectl apply -n argocd      -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
    ```
 
    Перевірити:
@@ -138,7 +146,7 @@ AsciiArtify/
 4. **Отримати початковий пароль користувача `admin`:**
 
    ```bash
-   kubectl -n argocd get secret argocd-initial-admin-secret      -o jsonpath="{.data.password}" | base64 -d && echo
+   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
    ```
 
 5. **Залогінитись у веб-інтерфейс Argo CD:**
@@ -150,6 +158,68 @@ AsciiArtify/
    Після входу рекомендується відразу змінити пароль.
 
 Далі можна додати GitOps-додаток (наприклад, демо `guestbook` або майбутні сервіси AsciiArtify) через **`+ New App`** в Argo CD — деталі в `doc/POC.md`.
+
+---
+
+## MVP: GitOps-деплой `go-demo-app` з auto-sync
+
+> Повні деталі — у [`doc/MVP.md`](doc/MVP.md). Тут — **TL;DR**.
+
+1. **Namespace для MVP:**
+
+   ```bash
+   kubectl create namespace go-demo
+   ```
+
+2. **Argo CD Application (декларативно):**
+
+   Додай файл `k8s/argocd-app-go-demo.yaml` і застосуй:
+
+   ```bash
+   kubectl apply -n argocd -f k8s/argocd-app-go-demo.yaml
+   ```
+
+   Приклад маніфесту:
+
+   ```yaml
+   apiVersion: argoproj.io/v1alpha1
+   kind: Application
+   metadata:
+     name: go-demo-app
+     namespace: argocd
+   spec:
+     project: default
+     source:
+       repoURL: https://github.com/den-vasyliev/go-demo-app.git
+       targetRevision: main
+       path: helm
+       helm:
+         releaseName: go-demo
+     destination:
+       server: https://kubernetes.default.svc
+       namespace: go-demo
+     syncPolicy:
+       automated:
+         prune: true
+         selfHeal: true
+       syncOptions:
+         - CreateNamespace=true
+   ```
+
+3. **Перевірити деплой:**
+
+   ```bash
+   kubectl -n go-demo get pods,svc
+   ```
+
+   (за потреби `port-forward` до API Gateway, напр. `ambassador` → `http://localhost:8081`)
+
+4. **Показати авто-синхронізацію:**
+
+   - зроби fork `https://github.com/den-vasyliev/go-demo-app` → `https://github.com/<username>/go-demo-app`;
+   - у маніфесті `repoURL` вкажи свій fork;
+   - зміни щось очевидне (напр., кількість реплік / тег образу), `git push`;
+   - спостерігай у UI Argo CD: `OutOfSync` → `Synced` + rolling update pod’ів.
 
 ---
 
@@ -189,3 +259,5 @@ AsciiArtify/
 Детальний аналіз та рекомендації див. у [`doc/Concept.md`](doc/Concept.md).
 
 Деталі GitOps PoC та Argo CD — у [`doc/POC.md`](doc/POC.md).
+
+Деталі MVP та auto-sync — у [`doc/MVP.md`](doc/MVP.md).

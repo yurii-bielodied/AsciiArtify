@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: go-demo-app
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/den-vasyliev/go-demo-app.git
+    targetRevision: main
+    path: helm
+    helm:
+      releaseName: go-demo
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: go-demo
+
+  syncPolicy:
+    automated:
+      prune: true # видаляти зайві ресурси
+      selfHeal: true # самовідновлення при ручних змінах у кластері
+    syncOptions:
+    - CreateNamespace=true
