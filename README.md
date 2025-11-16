@@ -33,6 +33,7 @@ AsciiArtify/
     MVP.md                        # MVP: GitOps-деплой go-demo-app + авто-синхронізація
   img/
     asciiartify-demo.gif          # демо запуску локального кластера та деплою “Hello World” на k3d
+    asciiartify-mvp-argocd.mp4    # демо роботи додатку та авто-синхронізації у Argo CD
   k8s/                            # маніфести Kubernetes для PoC
   README.md
 ```
